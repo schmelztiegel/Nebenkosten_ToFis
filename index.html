@@ -108,7 +108,56 @@
 <!-- Backup / CSV / Import -->
 <button onclick="backupData()">Backup erstellen</button>
 <button onclick="exportCSV()">CSV Export</button>
-<button onclick="importHistoricalData()">2026 importieren</button>
+<!-- Import: Button ohne inline onclick -->
+<button id="importBtn">2026 importieren</button>
+
+<!-- Importdaten laden (muss im gleichen Ordner liegen) -->
+<script src="import2026.js"></script>
+
+<!-- Robuste Import-Funktion + Listener -->
+<script>
+  // Globale Funktion, robust gegen Lade-Reihenfolge
+  function importHistoricalData() {
+    try {
+      if (!window.import2026) {
+        alert("import2026.js wurde nicht geladen oder ist leer.");
+        return;
+      }
+
+      const months = loadMonths();
+      const imported = window.import2026;
+
+      imported.forEach(m => {
+        // Falls m.total als String vorliegt, berechnen
+        if (typeof m.total === 'string') {
+          m.total = Function("return " + m.total)();
+        }
+        // Variable Kosten werden später korrekt berechnet; hier teilen wir variable Kosten
+        // Falls importierte Einträge bereits mel/diana haben, überschreiben wir nicht
+        if (m.mel === undefined || m.diana === undefined) {
+          // Falls variableCosts vorhanden, nutze diese, sonst teile total (Fallback)
+          const variable = (m.variableCosts !== undefined) ? m.variableCosts : m.total;
+          m.mel = variable / 2;
+          m.diana = variable / 2;
+        }
+        months.push(m);
+      });
+
+      saveMonths(months);
+      render();
+      alert("2026 erfolgreich importiert!");
+    } catch (e) {
+      alert("Fehler beim Import: " + e.message);
+      console.error(e);
+    }
+  }
+
+  // Listener sicher registrieren, wenn DOM bereit ist
+  document.addEventListener('DOMContentLoaded', function () {
+    const btn = document.getElementById('importBtn');
+    if (btn) btn.addEventListener('click', importHistoricalData);
+  });
+</script>
 
 <!-- Importdaten -->
 <script src="import2026.js"></script>
