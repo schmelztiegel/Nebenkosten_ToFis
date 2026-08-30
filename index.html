@@ -29,7 +29,6 @@
 <h1>ToFi‑Nebenkosten</h1>
 <p class="small">Monatlich nur Zählerstände und Müllabfuhren eingeben – Rest rechnet die App.</p>
 
-<!-- Jahresfilter -->
 <label>Jahr auswählen:
   <select id="yearFilter" onchange="render()">
     <option value="all">Alle Jahre</option>
@@ -102,66 +101,17 @@
   <p><strong>Vorjahresvergleich:</strong> <span id="comparePrev">–</span></p>
 </div>
 
-<!-- Chart -->
 <canvas id="usageChart" height="120"></canvas>
 
-<!-- Backup / CSV / Import -->
+<!-- Buttons -->
 <button onclick="backupData()">Backup erstellen</button>
 <button onclick="exportCSV()">CSV Export</button>
-<!-- Import: Button ohne inline onclick -->
+
+<!-- Import Button (keine inline onclick) -->
 <button id="importBtn">2026 importieren</button>
-
-<!-- Importdaten laden (muss im gleichen Ordner liegen) -->
-<script src="import2026.js"></script>
-
-<!-- Robuste Import-Funktion + Listener -->
-<script>
-  // Globale Funktion, robust gegen Lade-Reihenfolge
-  function importHistoricalData() {
-    try {
-      if (!window.import2026) {
-        alert("import2026.js wurde nicht geladen oder ist leer.");
-        return;
-      }
-
-      const months = loadMonths();
-      const imported = window.import2026;
-
-      imported.forEach(m => {
-        // Falls m.total als String vorliegt, berechnen
-        if (typeof m.total === 'string') {
-          m.total = Function("return " + m.total)();
-        }
-        // Variable Kosten werden später korrekt berechnet; hier teilen wir variable Kosten
-        // Falls importierte Einträge bereits mel/diana haben, überschreiben wir nicht
-        if (m.mel === undefined || m.diana === undefined) {
-          // Falls variableCosts vorhanden, nutze diese, sonst teile total (Fallback)
-          const variable = (m.variableCosts !== undefined) ? m.variableCosts : m.total;
-          m.mel = variable / 2;
-          m.diana = variable / 2;
-        }
-        months.push(m);
-      });
-
-      saveMonths(months);
-      render();
-      alert("2026 erfolgreich importiert!");
-    } catch (e) {
-      alert("Fehler beim Import: " + e.message);
-      console.error(e);
-    }
-  }
-
-  // Listener sicher registrieren, wenn DOM bereit ist
-  document.addEventListener('DOMContentLoaded', function () {
-    const btn = document.getElementById('importBtn');
-    if (btn) btn.addEventListener('click', importHistoricalData);
-  });
-</script>
 
 <!-- Importdaten -->
 <script src="import2026.js"></script>
-
 
 <script>
   const START_WATER = 116;
@@ -237,7 +187,6 @@
   function renderChart() {
     const months = loadMonths();
     const year = document.getElementById('yearFilter').value;
-
     const filtered = months.filter(m => year === 'all' || m.month.startsWith(year));
 
     const labels = filtered.map(m => m.month);
@@ -245,15 +194,25 @@
     const power = filtered.map(m => m.powerUsage);
     const trash = filtered.map(m => m.trashCount);
 
-    new Chart(document.getElementById('usageChart'), {
+    // Destroy existing chart if present to avoid duplicates
+    if (window._usageChart) {
+      window._usageChart.destroy();
+      window._usageChart = null;
+    }
+
+    window._usageChart = new Chart(document.getElementById('usageChart'), {
       type: 'line',
       data: {
         labels,
         datasets: [
-          { label: 'Wasser (m³)', data: water, borderColor: 'blue' },
-          { label: 'Strom (kWh)', data: power, borderColor: 'red' },
-          { label: 'Müll (Abfuhren)', data: trash, borderColor: 'green' }
+          { label: 'Wasser (m³)', data: water, borderColor: 'blue', fill: false },
+          { label: 'Strom (kWh)', data: power, borderColor: 'red', fill: false },
+          { label: 'Müll (Abfuhren)', data: trash, borderColor: 'green', fill: false }
         ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false
       }
     });
   }
@@ -286,7 +245,6 @@
   function render() {
     const months = loadMonths();
     const year = document.getElementById('yearFilter').value;
-
     const filtered = months.filter(m => year === 'all' || m.month.startsWith(year));
 
     const tbody = document.querySelector('#monthsTable tbody');
@@ -298,23 +256,23 @@
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${m.month}</td>
-        <td>${m.waterUsage.toFixed(2)}</td>
-        <td>${m.powerUsage.toFixed(0)}</td>
-        <td>${m.trashCount}</td>
-        <td>${m.tariffLabel}</td>
-        <td>${m.total.toFixed(2)}</td>
-        <td>${m.mel.toFixed(2)}</td>
-        <td>${m.diana.toFixed(2)}</td>
+        <td>${(m.waterUsage || 0).toFixed(2)}</td>
+        <td>${(m.powerUsage || 0).toFixed(0)}</td>
+        <td>${m.trashCount || 0}</td>
+        <td>${m.tariffLabel || ''}</td>
+        <td>${(m.total || 0).toFixed(2)}</td>
+        <td>${(m.mel || 0).toFixed(2)}</td>
+        <td>${(m.diana || 0).toFixed(2)}</td>
         <td><button onclick="deleteMonth(${idx})">X</button></td>
       `;
       tbody.appendChild(tr);
 
-      sumWater += m.waterUsage;
-      sumPower += m.powerUsage;
-      sumTrash += m.trashCount;
-      sumTotal += m.total;
-      sumMel += m.mel;
-      sumDiana += m.diana;
+      sumWater += (m.waterUsage || 0);
+      sumPower += (m.powerUsage || 0);
+      sumTrash += (m.trashCount || 0);
+      sumTotal += (m.total || 0);
+      sumMel += (m.mel || 0);
+      sumDiana += (m.diana || 0);
     });
 
     document.getElementById('sumWater').textContent = sumWater.toFixed(2);
@@ -335,7 +293,9 @@
     render();
   }
   window.deleteMonth = deleteMonth;
+</script>
 
+<script>
   document.getElementById('tariffChange').addEventListener('change', e => {
     document.getElementById('tariffFields').style.display =
       e.target.value === 'Ja' ? 'block' : 'none';
@@ -412,6 +372,7 @@
       powerUsage,
       tariffLabel: tariff.label,
       total,
+      variableCosts,
       mel,
       diana
     });
@@ -432,4 +393,95 @@
 
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'tofi-nebenkosten
+    a.download = 'tofi-nebenkosten-backup.json';
+    a.click();
+  }
+
+  function exportCSV() {
+    const months = loadMonths();
+    let csv = "Monat;Wasser;Strom;Müll;Gesamt;Mel;Diana\n";
+
+    months.forEach(m => {
+      csv += `${m.month};${m.waterUsage};${m.powerUsage};${m.trashCount};${m.total};${m.mel};${m.diana}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'nebenkosten.csv';
+    a.click();
+  }
+
+  // Import-Funktion
+  function importHistoricalData() {
+    try {
+      if (!window.import2026) {
+        alert("import2026.js wurde nicht geladen oder ist leer.");
+        return;
+      }
+
+      const months = loadMonths();
+      const imported = window.import2026;
+
+      imported.forEach(m => {
+        // Falls m.total als String vorliegt, berechnen
+        if (typeof m.total === 'string') {
+          m.total = Function("return " + m.total)();
+        }
+
+        // Falls variableCosts nicht vorhanden, versuchen wir sie zu berechnen:
+        // Wenn importierte Einträge waterUsage/powerUsage/trashCount vorhanden sind, berechne variableCosts mit aktuellen Tarifen
+        if (m.variableCosts === undefined) {
+          const tariffs = loadTariffs();
+          const tariff = pickTariff(m.month, tariffs);
+          const waterCost = (m.waterUsage || 0) * tariff.wasserPreis;
+          const wasteWaterCost = (m.waterUsage || 0) * tariff.abwasserPreis;
+          const powerCost = (m.powerUsage || 0) * tariff.stromTag;
+          const trashCost = (tariff.muellGrund || 0) + (m.trashCount || 0) * (tariff.muellAbfuhr || 0);
+          m.variableCosts = waterCost + wasteWaterCost + powerCost + trashCost;
+        }
+
+        if (m.mel === undefined) m.mel = m.variableCosts / 2;
+        if (m.diana === undefined) m.diana = m.variableCosts / 2;
+
+        // Ensure total exists for overview
+        if (m.total === undefined) {
+          const tariffs = loadTariffs();
+          const tariff = pickTariff(m.month, tariffs);
+          const fixedCosts = tariff.stromGrund + tariff.wasserGrund + tariff.abwasserGrund;
+          m.total = (m.variableCosts || 0) + fixedCosts;
+        }
+
+        months.push(m);
+      });
+
+      saveMonths(months);
+      render();
+      alert("2026 erfolgreich importiert!");
+    } catch (e) {
+      alert("Fehler beim Import: " + e.message);
+      console.error(e);
+    }
+  }
+
+  // Listener registrieren, falls Button vorhanden
+  document.addEventListener('DOMContentLoaded', function () {
+    const btn = document.getElementById('importBtn');
+    if (btn) btn.addEventListener('click', importHistoricalData);
+  });
+
+  // Service Worker Registrierung (PWA)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js').catch(err => {
+      console.warn('ServiceWorker Registrierung fehlgeschlagen:', err);
+    });
+  }
+
+  // Initiales Rendern
+  render();
+</script>
+
+</body>
+</html>
