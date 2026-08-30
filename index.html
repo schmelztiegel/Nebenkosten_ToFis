@@ -483,5 +483,27 @@
   render();
 </script>
 
+<button id="pullSharedBackupBtn">Gemeinsames Backup laden</button>
+
+<script>
+document.getElementById('pullSharedBackupBtn').addEventListener('click', async () => {
+  try {
+    const url = 'https://DEINNAME.github.io/REPO/backup.json'; // anpassen
+    const res = await fetch(url, {cache: "no-store"});
+    if (!res.ok) throw new Error('Datei nicht gefunden: ' + res.status);
+    const data = await res.json();
+    if (!data.months) throw new Error('Ungültiges Format');
+    saveMonths(data.months);
+    if (data.tariffs) saveTariffs(data.tariffs);
+    render();
+    alert('Gemeinsames Backup geladen.');
+  } catch (err) {
+    alert('Fehler beim Laden: ' + err.message);
+    console.error(err);
+  }
+});
+</script>
+
+
 </body>
 </html>
