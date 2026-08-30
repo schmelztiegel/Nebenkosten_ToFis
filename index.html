@@ -1,33 +1,24 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <title>ToFi‑Nebenkosten</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#ffffff">
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+  <meta charset="utf-8" />
+  <title>ToFi‑Nebenkosten (leicht)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    body { font-family: system-ui, sans-serif; padding: 20px; max-width: 900px; margin: 0 auto; }
-    h1 { margin-bottom: 0.5rem; }
-    form { margin-top: 1rem; margin-bottom: 1.5rem; }
-    label { display: block; margin: 0.4rem 0; }
-    input, select { padding: 4px 6px; }
-    button { padding: 6px 12px; margin-top: 0.6rem; }
-    table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.9rem; }
-    th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
-    .small { font-size: 0.8rem; color: #555; }
-    .error { color: #c00; margin-top: 0.5rem; }
-    .summary { margin-top: 1.5rem; padding: 1rem; border: 1px solid #aaa; }
+    body { font-family: system-ui, sans-serif; max-width:900px; margin:20px auto; padding:10px; }
+    h1 { margin:0 0 8px 0; }
+    label { display:block; margin:6px 0; }
+    input, select, button { padding:6px 8px; margin-top:4px; }
+    table { width:100%; border-collapse:collapse; margin-top:12px; }
+    th, td { border:1px solid #ddd; padding:6px; text-align:center; }
+    .small { font-size:0.85rem; color:#555; }
+    .error { color:#c00; margin-top:6px; }
   </style>
 </head>
-
 <body>
 
-<h1>ToFi‑Nebenkosten</h1>
-<p class="small">Monatlich nur Zählerstände und Müllabfuhren eingeben – Rest rechnet die App.</p>
+<h1>ToFi‑Nebenkosten (leicht)</h1>
+<p class="small">Nur Einträge anzeigen. Auswertungen entfernt für bessere Übersicht.</p>
 
 <label>Jahr auswählen:
   <select id="yearFilter" onchange="render()">
@@ -57,14 +48,12 @@
     </select>
   </label>
 
-  <div id="tariffFields" style="display:none; margin-top:0.5rem;">
-    <p class="small"><strong>Neuer Tarif ab diesem Monat:</strong></p>
+  <div id="tariffFields" style="display:none; margin-top:6px;">
+    <p class="small"><strong>Neuer Tarif ab diesem Monat (optional)</strong></p>
     <label>Strom‑Grundpreis (€): <input type="number" id="tStromGrund" step="0.01"></label>
     <label>Strom‑Preis Tag (€/kWh): <input type="number" id="tStromTag" step="0.0001"></label>
-    <label>Strom‑Preis Nacht (€/kWh): <input type="number" id="tStromNacht" step="0.0001"></label>
     <label>Trinkwasser‑Grundpreis (€): <input type="number" id="tWasserGrund" step="0.01"></label>
     <label>Abwasser‑Grundpreis (€): <input type="number" id="tAbwasserGrund" step="0.01"></label>
-    <label>Müll‑Grundpreis (€): <input type="number" id="tMuellGrund" step="0.01"></label>
     <label>Müll je Abfuhr (€): <input type="number" id="tMuellAbfuhr" step="0.01"></label>
   </div>
 
@@ -72,12 +61,13 @@
   <div id="error" class="error"></div>
 </form>
 
+<!--IMPORT/BACKUP/PULL-->
 <table id="monthsTable">
   <thead>
     <tr>
       <th>Monat</th>
-      <th>Wasser</th>
-      <th>Strom</th>
+      <th>Wasser (m³)</th>
+      <th>Strom (kWh)</th>
       <th>Müll</th>
       <th>Tarif</th>
       <th>Gesamt (€)</th>
@@ -89,169 +79,102 @@
   <tbody></tbody>
 </table>
 
-<div class="summary">
-  <h3>Jahresübersicht</h3>
-  <p><strong>Wasser:</strong> <span id="sumWater">0</span> m³</p>
-  <p><strong>Strom:</strong> <span id="sumPower">0</span> kWh</p>
-  <p><strong>Müll:</strong> <span id="sumTrash">0</span></p>
-  <p><strong>Gesamt:</strong> <span id="sumTotal">0.00</span> €</p>
-  <p><strong>Mel:</strong> <span id="sumMel">0.00</span> €</p>
-  <p><strong>Diana:</strong> <span id="sumDiana">0.00</span> €</p>
+<!-- Aktionen -->
+<div style="margin-top:12px;">
+  <button onclick="backupData()">Backup erstellen (Download)</button>
+  <button onclick="exportCSV()">CSV Export</button>
 
-  <p><strong>Vorjahresvergleich:</strong> <span id="comparePrev">–</span></p>
+  <!-- Import 2026 (lokale JS-Datei mit window.import2026) -->
+  <button id="importBtn">2026 importieren</button>
+
+  <!-- Import Backup-Datei vom Handy / Rechner -->
+  <input type="file" id="backupFileInput" accept="application/json" style="display:none">
+  <button id="importBackupBtn">Backup importieren (Datei wählen)</button>
+
+  <!-- Pull gemeinsames Backup aus GitHub (URL anpassen) -->
+  <button id="pullSharedBackupBtn">Gemeinsames Backup laden (GitHub)</button>
 </div>
 
-<!-- Buttons -->
-<button onclick="backupData()">Backup erstellen</button>
-<button onclick="exportCSV()">CSV Export</button>
-
-<!-- Import Button (keine inline onclick) -->
-<button id="importBtn">2026 importieren</button>
-
-<!-- Importdaten -->
+<!-- Importdaten (falls vorhanden im selben Ordner) -->
 <script src="import2026.js"></script>
 
+<!-- Kernfunktionen: Speicher, Render, Formular‑Handling -->
 <script>
+  // Startwerte (falls benötigt)
   const START_WATER = 116;
   const START_POWER = 18036;
 
+  // LocalStorage Helfer
   function loadTariffs() {
     const raw = localStorage.getItem('tofiTariffs');
     if (raw) return JSON.parse(raw);
-
-    const defaults = [
-      {
-        validFrom: '2026-01-01',
-        stromGrund: 12.00,
-        stromTag: 0.23,
-        stromNacht: 0.23,
-        wasserGrund: 11.45,
-        abwasserGrund: 10.00,
-        muellGrund: 6.46,
-        muellAbfuhr: 5.50,
-        wasserPreis: 1.85,
-        abwasserPreis: 2.56,
-        label: 'Alter Tarif (bis 01.05.2026)'
-      },
-      {
-        validFrom: '2026-05-02',
-        stromGrund: 14.85,
-        stromTag: 0.2853,
-        stromNacht: 0.1853,
-        wasserGrund: 11.45,
-        abwasserGrund: 10.00,
-        muellGrund: 6.46,
-        muellAbfuhr: 5.50,
-        wasserPreis: 1.85,
-        abwasserPreis: 2.56,
-        label: 'Neuer Tarif (ab 02.05.2026)'
-      }
-    ];
+    const defaults = [{
+      validFrom: '2026-01-01',
+      stromGrund: 12.00,
+      stromTag: 0.23,
+      wasserPreis: 1.85,
+      abwasserPreis: 2.56,
+      muellAbfuhr: 5.50,
+      wasserGrund: 11.45,
+      abwasserGrund: 10.00,
+      muellGrund: 6.46,
+      label: 'Standard'
+    }];
     localStorage.setItem('tofiTariffs', JSON.stringify(defaults));
     return defaults;
   }
+  function saveTariffs(t){ localStorage.setItem('tofiTariffs', JSON.stringify(t)); }
+  function loadMonths(){ return JSON.parse(localStorage.getItem('tofiMonths') || '[]'); }
+  function saveMonths(m){ localStorage.setItem('tofiMonths', JSON.stringify(m)); }
 
-  function saveTariffs(t) { localStorage.setItem('tofiTariffs', JSON.stringify(t)); }
-  function loadMonths() { return JSON.parse(localStorage.getItem('tofiMonths') || '[]'); }
-  function saveMonths(m) { localStorage.setItem('tofiMonths', JSON.stringify(m)); }
-
-  function monthToDate(m) {
-    const [y, mo] = m.split('-').map(Number);
-    return new Date(y, mo - 1, 1);
-  }
-
-  function pickTariff(month, tariffs) {
+  function monthToDate(m){ const [y,mo]=m.split('-').map(Number); return new Date(y,mo-1,1); }
+  function pickTariff(month, tariffs){
     const d = monthToDate(month);
     let chosen = tariffs[0];
-    tariffs.forEach(t => {
-      if (new Date(t.validFrom) <= d) chosen = t;
-    });
+    tariffs.forEach(t => { if (new Date(t.validFrom) <= d) chosen = t; });
     return chosen;
   }
 
-  function getPrevReadings(months, month) {
-    const sorted = [...months].sort((a,b)=>a.month.localeCompare(b.month));
-    let prevWater = START_WATER;
-    let prevPower = START_POWER;
-    sorted.forEach(m => {
-      if (m.month < month) {
-        prevWater = m.waterReading;
-        prevPower = m.powerReading;
-      }
-    });
-    return { prevWater, prevPower };
-  }
-
-function render() {
-  const months = loadMonths();
-  const year = document.getElementById('yearFilter').value;
-  const filtered = months.filter(m => year === 'all' || m.month.startsWith(year));
-
-  const tbody = document.querySelector('#monthsTable tbody');
-  tbody.innerHTML = '';
-
-  filtered.forEach((m, idx) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${m.month}</td>
-      <td>${(m.waterUsage || 0).toFixed(2)}</td>
-      <td>${(m.powerUsage || 0).toFixed(0)}</td>
-      <td>${m.trashCount || 0}</td>
-      <td>${m.tariffLabel || ''}</td>
-      <td>${(m.total || 0).toFixed(2)}</td>
-      <td>${(m.mel || 0).toFixed(2)}</td>
-      <td>${(m.diana || 0).toFixed(2)}</td>
-      <td><button onclick="deleteMonth(${idx})">X</button></td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-
+  // Vereinfachte render(): nur Tabelle, keine Auswertungen
+  function render(){
+    const months = loadMonths();
+    const year = document.getElementById('yearFilter').value;
+    const filtered = months.filter(m => year === 'all' || m.month.startsWith(year));
+    const tbody = document.querySelector('#monthsTable tbody');
+    tbody.innerHTML = '';
     filtered.forEach((m, idx) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${m.month}</td>
-        <td>${(m.waterUsage || 0).toFixed(2)}</td>
-        <td>${(m.powerUsage || 0).toFixed(0)}</td>
-        <td>${m.trashCount || 0}</td>
-        <td>${m.tariffLabel || ''}</td>
-        <td>${(m.total || 0).toFixed(2)}</td>
-        <td>${(m.mel || 0).toFixed(2)}</td>
-        <td>${(m.diana || 0).toFixed(2)}</td>
+        <td>${(m.waterUsage||0).toFixed(2)}</td>
+        <td>${(m.powerUsage||0).toFixed(0)}</td>
+        <td>${m.trashCount||0}</td>
+        <td>${m.tariffLabel||''}</td>
+        <td>${(m.total||0).toFixed(2)}</td>
+        <td>${(m.mel||0).toFixed(2)}</td>
+        <td>${(m.diana||0).toFixed(2)}</td>
         <td><button onclick="deleteMonth(${idx})">X</button></td>
       `;
       tbody.appendChild(tr);
-
-      sumWater += (m.waterUsage || 0);
-      sumPower += (m.powerUsage || 0);
-      sumTrash += (m.trashCount || 0);
-      sumTotal += (m.total || 0);
-      sumMel += (m.mel || 0);
-      sumDiana += (m.diana || 0);
     });
   }
 
-  function deleteMonth(i) {
+  function deleteMonth(i){
     const m = loadMonths();
     m.splice(i,1);
     saveMonths(m);
     render();
   }
   window.deleteMonth = deleteMonth;
-</script>
 
-<script>
-  document.getElementById('tariffChange').addEventListener('change', e => {
-    document.getElementById('tariffFields').style.display =
-      e.target.value === 'Ja' ? 'block' : 'none';
+  // Formular: Monat speichern (berechnet Verbrauch + Kosten)
+  document.getElementById('tariffChange').addEventListener('change', e=>{
+    document.getElementById('tariffFields').style.display = e.target.value === 'Ja' ? 'block' : 'none';
   });
 
-  document.getElementById('monthForm').addEventListener('submit', e => {
+  document.getElementById('monthForm').addEventListener('submit', e=>{
     e.preventDefault();
-    const err = document.getElementById('error');
-    err.textContent = '';
-
+    const err = document.getElementById('error'); err.textContent = '';
     const month = document.getElementById('month').value;
     const waterReading = parseFloat(document.getElementById('waterReading').value);
     const powerReading = parseFloat(document.getElementById('powerReading').value);
@@ -267,60 +190,40 @@ function render() {
         validFrom: month + '-01',
         stromGrund: parseFloat(document.getElementById('tStromGrund').value) || tariffs.at(-1).stromGrund,
         stromTag: parseFloat(document.getElementById('tStromTag').value) || tariffs.at(-1).stromTag,
-        stromNacht: parseFloat(document.getElementById('tStromNacht').value) || tariffs.at(-1).stromNacht,
         wasserGrund: parseFloat(document.getElementById('tWasserGrund').value) || tariffs.at(-1).wasserGrund,
         abwasserGrund: parseFloat(document.getElementById('tAbwasserGrund').value) || tariffs.at(-1).abwasserGrund,
-        muellGrund: parseFloat(document.getElementById('tMuellGrund').value) || tariffs.at(-1).muellGrund,
         muellAbfuhr: parseFloat(document.getElementById('tMuellAbfuhr').value) || tariffs.at(-1).muellAbfuhr,
         wasserPreis: tariffs.at(-1).wasserPreis,
         abwasserPreis: tariffs.at(-1).abwasserPreis,
         label: 'Tarif ab ' + month
       };
-      tariffs.push(t);
-      saveTariffs(tariffs);
+      tariffs.push(t); saveTariffs(tariffs);
     }
 
     const tariff = pickTariff(month, tariffs);
-    const prev = getPrevReadings(months, month);
+    const prev = (function(){ const s = [...months].sort((a,b)=>a.month.localeCompare(b.month)); let pw=START_WATER, pp=START_POWER; s.forEach(x=>{ if (x.month < month){ pw = x.waterReading; pp = x.powerReading; }}); return {prevWater:pw, prevPower:pp}; })();
 
     const waterUsage = waterReading - prev.prevWater;
     if (waterUsage < 0) { err.textContent = 'Wasser‑Zählerstand kleiner als vorher.'; return; }
 
-    let powerUsage = powerReset === 'Ja'
-      ? powerReading
-      : powerReading - prev.prevPower;
+    let powerUsage = powerReset === 'Ja' ? powerReading : powerReading - prev.prevPower;
     if (powerUsage < 0) { err.textContent = 'Strom‑Zählerstand kleiner als vorher.'; return; }
 
     const waterCost = waterUsage * tariff.wasserPreis;
     const wasteWaterCost = waterUsage * tariff.abwasserPreis;
-    const powerCost = powerUsage * tariff.stromTag;
-    const trashCost = tariff.muellGrund + trashCount * tariff.muellAbfuhr;
+    const powerCost = powerUsage * (tariff.stromTag || 0);
+    const trashCost = (tariff.muellGrund || 0) + (trashCount * (tariff.muellAbfuhr || 0));
 
-    // Fixkosten NICHT aufteilen
-    const fixedCosts = tariff.stromGrund + tariff.wasserGrund + tariff.abwasserGrund;
-
-    // Variable Kosten (werden aufgeteilt)
+    const fixedCosts = (tariff.stromGrund||0) + (tariff.wasserGrund||0) + (tariff.abwasserGrund||0);
     const variableCosts = waterCost + wasteWaterCost + powerCost + trashCost;
-
-    // Gesamtkosten (für Übersicht)
     const total = variableCosts + fixedCosts;
-
-    // Mel & Diana zahlen NUR variable Kosten
     const mel = variableCosts / 2;
     const diana = variableCosts / 2;
 
     months.push({
-      month,
-      waterReading,
-      powerReading,
-      trashCount,
-      waterUsage,
-      powerUsage,
-      tariffLabel: tariff.label,
-      total,
-      variableCosts,
-      mel,
-      diana
+      month, waterReading, powerReading, trashCount,
+      waterUsage, powerUsage, tariffLabel: tariff.label,
+      total, variableCosts, mel, diana
     });
 
     saveMonths(months);
@@ -328,128 +231,92 @@ function render() {
     document.getElementById('tariffFields').style.display = 'none';
     render();
   });
+</script>
 
-  function backupData() {
-    const data = {
-      months: loadMonths(),
-      tariffs: loadTariffs()
-    };
+<!-- Backup / Import / Pull (GitHub JSON) + Init -->
+<script>
+  // Backup (Download JSON)
+  function backupData(){
+    const data = { months: loadMonths(), tariffs: loadTariffs() };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-
     const a = document.createElement('a');
     a.href = url;
     a.download = 'tofi-nebenkosten-backup.json';
     a.click();
   }
 
-  function exportCSV() {
+  // CSV Export
+  function exportCSV(){
     const months = loadMonths();
     let csv = "Monat;Wasser;Strom;Müll;Gesamt;Mel;Diana\n";
-
     months.forEach(m => {
-      csv += `${m.month};${m.waterUsage};${m.powerUsage};${m.trashCount};${m.total};${m.mel};${m.diana}\n`;
+      csv += `${m.month};${m.waterUsage||0};${m.powerUsage||0};${m.trashCount||0};${m.total||0};${m.mel||0};${m.diana||0}\n`;
     });
-
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
-
     const a = document.createElement('a');
     a.href = url;
     a.download = 'nebenkosten.csv';
     a.click();
   }
 
-  // Import-Funktion
-  function importHistoricalData() {
+  // Import 2026 (aus import2026.js -> window.import2026)
+  function importHistoricalData(){
     try {
-      if (!window.import2026) {
-        alert("import2026.js wurde nicht geladen oder ist leer.");
-        return;
-      }
-
+      if (!window.import2026) { alert('import2026.js wurde nicht geladen.'); return; }
       const months = loadMonths();
       const imported = window.import2026;
-
       imported.forEach(m => {
-        // Falls m.total als String vorliegt, berechnen
-        if (typeof m.total === 'string') {
-          m.total = Function("return " + m.total)();
-        }
-
-        // Falls variableCosts nicht vorhanden, versuchen wir sie zu berechnen:
-        // Wenn importierte Einträge waterUsage/powerUsage/trashCount vorhanden sind, berechne variableCosts mit aktuellen Tarifen
-        if (m.variableCosts === undefined) {
-          const tariffs = loadTariffs();
-          const tariff = pickTariff(m.month, tariffs);
-          const waterCost = (m.waterUsage || 0) * tariff.wasserPreis;
-          const wasteWaterCost = (m.waterUsage || 0) * tariff.abwasserPreis;
-          const powerCost = (m.powerUsage || 0) * tariff.stromTag;
-          const trashCost = (tariff.muellGrund || 0) + (m.trashCount || 0) * (tariff.muellAbfuhr || 0);
-          m.variableCosts = waterCost + wasteWaterCost + powerCost + trashCost;
-        }
-
-        if (m.mel === undefined) m.mel = m.variableCosts / 2;
-        if (m.diana === undefined) m.diana = m.variableCosts / 2;
-
-        // Ensure total exists for overview
-        if (m.total === undefined) {
-          const tariffs = loadTariffs();
-          const tariff = pickTariff(m.month, tariffs);
-          const fixedCosts = tariff.stromGrund + tariff.wasserGrund + tariff.abwasserGrund;
-          m.total = (m.variableCosts || 0) + fixedCosts;
-        }
-
+        if (typeof m.total === 'string') m.total = Function("return " + m.total)();
+        if (m.variableCosts === undefined) m.variableCosts = m.variableCosts || 0;
+        if (m.mel === undefined) m.mel = (m.variableCosts || m.total || 0) / 2;
+        if (m.diana === undefined) m.diana = m.mel;
         months.push(m);
       });
-
-      saveMonths(months);
-      render();
-      alert("2026 erfolgreich importiert!");
-    } catch (e) {
-      alert("Fehler beim Import: " + e.message);
-      console.error(e);
-    }
+      saveMonths(months); render(); alert('2026 importiert.');
+    } catch (e) { alert('Fehler beim Import: ' + e.message); console.error(e); }
   }
 
-  // Listener registrieren, falls Button vorhanden
-  document.addEventListener('DOMContentLoaded', function () {
-    const btn = document.getElementById('importBtn');
-    if (btn) btn.addEventListener('click', importHistoricalData);
+  // Import Backup-Datei (lokal vom Handy/Rechner)
+  document.getElementById('importBackupBtn').addEventListener('click', ()=> document.getElementById('backupFileInput').click());
+  document.getElementById('backupFileInput').addEventListener('change', function(ev){
+    const f = ev.target.files && ev.target.files[0];
+    if (!f) return alert('Keine Datei gewählt.');
+    const reader = new FileReader();
+    reader.onload = function(e){
+      try {
+        const data = JSON.parse(e.target.result);
+        if (!data.months) return alert('Ungültiges Backup-Format.');
+        saveMonths(data.months);
+        if (data.tariffs) saveTariffs(data.tariffs);
+        render(); alert('Backup importiert.');
+      } catch(err){ alert('Fehler beim Einlesen: ' + err.message); console.error(err); }
+    };
+    reader.readAsText(f);
   });
 
-  // Service Worker Registrierung (PWA)
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('service-worker.js').catch(err => {
-      console.warn('ServiceWorker Registrierung fehlgeschlagen:', err);
-    });
-  }
+  // Pull gemeinsames Backup aus GitHub (URL anpassen)
+  document.getElementById('pullSharedBackupBtn').addEventListener('click', async ()=>{
+    try {
+      const url = 'https://DEINNAME.github.io/REPONAME/tofi-nebenkosten-backup.json'; // anpassen
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error('Datei nicht gefunden: ' + res.status);
+      const data = await res.json();
+      if (!data.months) throw new Error('Ungültiges Format');
+      saveMonths(data.months);
+      if (data.tariffs) saveTariffs(data.tariffs);
+      render(); alert('Gemeinsames Backup geladen.');
+    } catch(err){ alert('Fehler beim Laden: ' + err.message); console.error(err); }
+  });
 
-  // Initiales Rendern
-  render();
-</script>
-
-<button id="pullSharedBackupBtn">Gemeinsames Backup laden</button>
-
-<script>
-document.getElementById('pullSharedBackupBtn').addEventListener('click', async () => {
-  try {
-    const url = 'https://DEINNAME.github.io/REPO/backup.json'; // anpassen
-    const res = await fetch(url, {cache: "no-store"});
-    if (!res.ok) throw new Error('Datei nicht gefunden: ' + res.status);
-    const data = await res.json();
-    if (!data.months) throw new Error('Ungültiges Format');
-    saveMonths(data.months);
-    if (data.tariffs) saveTariffs(data.tariffs);
+  // Listener für import2026 Button und Init
+  document.addEventListener('DOMContentLoaded', function(){
+    const b = document.getElementById('importBtn');
+    if (b) b.addEventListener('click', importHistoricalData);
     render();
-    alert('Gemeinsames Backup geladen.');
-  } catch (err) {
-    alert('Fehler beim Laden: ' + err.message);
-    console.error(err);
-  }
-});
+  });
 </script>
-
 
 </body>
 </html>
