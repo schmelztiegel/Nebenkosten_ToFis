@@ -288,5 +288,28 @@
   }
 </script>
 
+<script src="import2026.js"></script>
+
+<script>
+  function importHistoricalData() {
+    const months = loadMonths();
+    const imported = window.import2026;
+
+    imported.forEach(m => {
+      m.total = eval(m.total);     // Kosten berechnen
+      m.mel = m.total / 2;
+      m.diana = m.total / 2;
+      months.push(m);
+    });
+
+    saveMonths(months);
+    render();
+    alert("2026 erfolgreich importiert!");
+  }
+</script>
+
+<button onclick="importHistoricalData()">2026 importieren</button>
+
+
 </body>
 </html>
