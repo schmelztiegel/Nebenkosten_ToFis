@@ -113,6 +113,7 @@
 <!-- Importdaten -->
 <script src="import2026.js"></script>
 
+
 <script>
   const START_WATER = 116;
   const START_POWER = 18036;
@@ -382,21 +383,4 @@
 
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'tofi-nebenkosten-backup.json';
-    a.click();
-  }
-
-  function exportCSV() {
-    const months = loadMonths();
-    let csv = "Monat;Wasser;Strom;Müll;Gesamt;Mel;Diana\n";
-
-    months.forEach(m => {
-      csv += `${m.month};${m.waterUsage};${m.powerUsage};${m.trashCount};${m.total};${m.mel};${m.diana}\n`;
-    });
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'nebenkosten.csv';
+    a.download = 'tofi-nebenkosten
