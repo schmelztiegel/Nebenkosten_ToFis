@@ -339,11 +339,19 @@
     const wasteWaterCost = waterUsage * tariff.abwasserPreis;
     const powerCost = powerUsage * tariff.stromTag;
     const trashCost = tariff.muellGrund + trashCount * tariff.muellAbfuhr;
+
+    // Fixkosten NICHT aufteilen
     const fixedCosts = tariff.stromGrund + tariff.wasserGrund + tariff.abwasserGrund;
 
-    const total = waterCost + wasteWaterCost + powerCost + trashCost + fixedCosts;
-    const mel = total / 2;
-    const diana = total / 2;
+    // Variable Kosten (werden aufgeteilt)
+    const variableCosts = waterCost + wasteWaterCost + powerCost + trashCost;
+
+    // Gesamtkosten (für Übersicht)
+    const total = variableCosts + fixedCosts;
+
+    // Mel & Diana zahlen NUR variable Kosten
+    const mel = variableCosts / 2;
+    const diana = variableCosts / 2;
 
     months.push({
       month,
@@ -390,4 +398,5 @@
     const url = URL.createObjectURL(blob);
 
     const a = document.createElement('a');
-    a.href =
+    a.href = url;
+    a.download = 'nebenkosten.csv';
