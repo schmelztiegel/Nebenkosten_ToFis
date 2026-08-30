@@ -6,6 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#ffffff">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
     body { font-family: system-ui, sans-serif; padding: 20px; max-width: 900px; margin: 0 auto; }
     h1 { margin-bottom: 0.5rem; }
@@ -20,10 +23,20 @@
     .summary { margin-top: 1.5rem; padding: 1rem; border: 1px solid #aaa; }
   </style>
 </head>
+
 <body>
 
 <h1>ToFi‑Nebenkosten</h1>
 <p class="small">Monatlich nur Zählerstände und Müllabfuhren eingeben – Rest rechnet die App.</p>
+
+<!-- Jahresfilter -->
+<label>Jahr auswählen:
+  <select id="yearFilter" onchange="render()">
+    <option value="all">Alle Jahre</option>
+    <option value="2026">2026</option>
+    <option value="2027">2027</option>
+  </select>
+</label>
 
 <form id="monthForm">
   <label>Monat: <input type="month" id="month" required></label>
@@ -31,14 +44,14 @@
   <label>Strom‑Zählerstand (kWh): <input type="number" id="powerReading" step="1" required></label>
   <label>Anzahl Müllabfuhren: <input type="number" id="trashCount" min="0" step="1" required></label>
 
-  <label>Zählerwechsel Strom in diesem Monat?
+  <label>Zählerwechsel Strom?
     <select id="powerReset">
       <option value="Nein">Nein</option>
       <option value="Ja">Ja</option>
     </select>
   </label>
 
-  <label>Tarifwechsel / Preisanpassung?
+  <label>Tarifwechsel?
     <select id="tariffChange">
       <option value="Nein">Nein</option>
       <option value="Ja">Ja</option>
@@ -85,7 +98,20 @@
   <p><strong>Gesamt:</strong> <span id="sumTotal">0.00</span> €</p>
   <p><strong>Mel:</strong> <span id="sumMel">0.00</span> €</p>
   <p><strong>Diana:</strong> <span id="sumDiana">0.00</span> €</p>
+
+  <p><strong>Vorjahresvergleich:</strong> <span id="comparePrev">–</span></p>
 </div>
+
+<!-- Chart -->
+<canvas id="usageChart" height="120"></canvas>
+
+<!-- Backup / CSV / Import -->
+<button onclick="backupData()">Backup erstellen</button>
+<button onclick="exportCSV()">CSV Export</button>
+<button onclick="importHistoricalData()">2026 importieren</button>
+
+<!-- Importdaten -->
+<script src="import2026.js"></script>
 
 <script>
   const START_WATER = 116;
@@ -94,6 +120,7 @@
   function loadTariffs() {
     const raw = localStorage.getItem('tofiTariffs');
     if (raw) return JSON.parse(raw);
+
     const defaults = [
       {
         validFrom: '2026-01-01',
@@ -157,14 +184,67 @@
     return { prevWater, prevPower };
   }
 
+  function renderChart() {
+    const months = loadMonths();
+    const year = document.getElementById('yearFilter').value;
+
+    const filtered = months.filter(m => year === 'all' || m.month.startsWith(year));
+
+    const labels = filtered.map(m => m.month);
+    const water = filtered.map(m => m.waterUsage);
+    const power = filtered.map(m => m.powerUsage);
+    const trash = filtered.map(m => m.trashCount);
+
+    new Chart(document.getElementById('usageChart'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Wasser (m³)', data: water, borderColor: 'blue' },
+          { label: 'Strom (kWh)', data: power, borderColor: 'red' },
+          { label: 'Müll (Abfuhren)', data: trash, borderColor: 'green' }
+        ]
+      }
+    });
+  }
+
+  function renderComparison() {
+    const months = loadMonths();
+    const year = document.getElementById('yearFilter').value;
+
+    if (year === 'all') {
+      document.getElementById('comparePrev').textContent = "Bitte Jahr wählen";
+      return;
+    }
+
+    const thisYear = months.filter(m => m.month.startsWith(year));
+    const lastYear = months.filter(m => m.month.startsWith(String(Number(year)-1)));
+
+    const sumThis = thisYear.reduce((a,b)=>a+b.total,0);
+    const sumLast = lastYear.reduce((a,b)=>a+b.total,0);
+
+    if (lastYear.length === 0) {
+      document.getElementById('comparePrev').textContent = "Kein Vorjahr vorhanden";
+      return;
+    }
+
+    const diff = sumThis - sumLast;
+    document.getElementById('comparePrev').textContent =
+      `${diff.toFixed(2)} € Unterschied zu ${Number(year)-1}`;
+  }
+
   function render() {
     const months = loadMonths();
+    const year = document.getElementById('yearFilter').value;
+
+    const filtered = months.filter(m => year === 'all' || m.month.startsWith(year));
+
     const tbody = document.querySelector('#monthsTable tbody');
     tbody.innerHTML = '';
 
     let sumWater=0, sumPower=0, sumTrash=0, sumTotal=0, sumMel=0, sumDiana=0;
 
-    months.forEach((m, idx) => {
+    filtered.forEach((m, idx) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${m.month}</td>
@@ -193,6 +273,9 @@
     document.getElementById('sumTotal').textContent = sumTotal.toFixed(2);
     document.getElementById('sumMel').textContent = sumMel.toFixed(2);
     document.getElementById('sumDiana').textContent = sumDiana.toFixed(2);
+
+    renderChart();
+    renderComparison();
   }
 
   function deleteMonth(i) {
@@ -281,35 +364,30 @@
     render();
   });
 
-  render();
+  function backupData() {
+    const data = {
+      months: loadMonths(),
+      tariffs: loadTariffs()
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
 
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('service-worker.js');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'tofi-nebenkosten-backup.json';
+    a.click();
   }
-</script>
 
-<script src="import2026.js"></script>
-
-<script>
-  function importHistoricalData() {
+  function exportCSV() {
     const months = loadMonths();
-    const imported = window.import2026;
+    let csv = "Monat;Wasser;Strom;Müll;Gesamt;Mel;Diana\n";
 
-    imported.forEach(m => {
-      m.total = eval(m.total);     // Kosten berechnen
-      m.mel = m.total / 2;
-      m.diana = m.total / 2;
-      months.push(m);
+    months.forEach(m => {
+      csv += `${m.month};${m.waterUsage};${m.powerUsage};${m.trashCount};${m.total};${m.mel};${m.diana}\n`;
     });
 
-    saveMonths(months);
-    render();
-    alert("2026 erfolgreich importiert!");
-  }
-</script>
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
 
-<button onclick="importHistoricalData()">2026 importieren</button>
-
-
-</body>
-</html>
+    const a = document.createElement('a');
+    a.href =
