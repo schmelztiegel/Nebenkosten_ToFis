@@ -262,21 +262,73 @@
   }
 
   // Import 2026 (aus import2026.js -> window.import2026)
-  function importHistoricalData(){
+<script>
+  // Robuste Import-Funktion: wartet auf loadMonths oder nutzt localStorage als Fallback
+  async function importHistoricalData() {
     try {
-      if (!window.import2026) { alert('import2026.js wurde nicht geladen.'); return; }
-      const months = loadMonths();
+      // Warte bis loadMonths verfügbar ist (max 2 Sekunden)
+      const waitFor = (name, timeout = 2000) => new Promise((resolve, reject) => {
+        const start = Date.now();
+        (function check() {
+          if (window[name] && typeof window[name] === 'function') return resolve(true);
+          if (Date.now() - start > timeout) return resolve(false);
+          setTimeout(check, 100);
+        })();
+      });
+
+      const ok = await waitFor('loadMonths', 2000);
+      if (!ok) {
+        console.warn('loadMonths nicht gefunden, verwende localStorage-Fallback');
+      }
+
+      // Lade Monate: bevorzugt über loadMonths(), sonst direkt aus localStorage
+      const months = (window.loadMonths && typeof window.loadMonths === 'function')
+        ? window.loadMonths()
+        : JSON.parse(localStorage.getItem('tofiMonths') || '[]');
+
+      if (!months) throw new Error('Konnte Monatsdaten nicht laden.');
+
+      if (!window.import2026) {
+        alert('import2026.js wurde nicht geladen.');
+        return;
+      }
+
       const imported = window.import2026;
       imported.forEach(m => {
-        if (typeof m.total === 'string') m.total = Function("return " + m.total)();
+        if (typeof m.total === 'string') {
+          try { m.total = Function("return " + m.total)(); } catch(e) { m.total = 0; }
+        }
         if (m.variableCosts === undefined) m.variableCosts = m.variableCosts || 0;
         if (m.mel === undefined) m.mel = (m.variableCosts || m.total || 0) / 2;
         if (m.diana === undefined) m.diana = m.mel;
         months.push(m);
       });
-      saveMonths(months); render(); alert('2026 importiert.');
-    } catch (e) { alert('Fehler beim Import: ' + e.message); console.error(e); }
+
+      // Speichern: bevorzugt saveMonths(), sonst localStorage direkt
+      if (window.saveMonths && typeof window.saveMonths === 'function') {
+        window.saveMonths(months);
+      } else {
+        localStorage.setItem('tofiMonths', JSON.stringify(months));
+      }
+
+      // Falls render() vorhanden, neu zeichnen
+      if (window.render && typeof window.render === 'function') window.render();
+
+      alert('Import abgeschlossen.');
+    } catch (e) {
+      alert('Fehler beim Import: ' + e.message);
+      console.error(e);
+    }
   }
+
+  // Listener registrieren sicher nach DOM ready
+  document.addEventListener('DOMContentLoaded', function(){
+    const b = document.getElementById('importBtn');
+    if (b) b.removeEventListener('click', importHistoricalData);
+    if (b) b.addEventListener('click', importHistoricalData);
+  });
+</script>
+
 
   // Import Backup-Datei (lokal vom Handy/Rechner)
   document.getElementById('importBackupBtn').addEventListener('click', ()=> document.getElementById('backupFileInput').click());
