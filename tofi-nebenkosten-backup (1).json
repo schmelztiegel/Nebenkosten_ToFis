@@ -1,0 +1,141 @@
+{
+  "months": [
+    {
+      "month": "2026-01",
+      "waterReading": 116,
+      "powerReading": 18036,
+      "trashCount": 2,
+      "waterUsage": 0,
+      "powerUsage": 0,
+      "tariffLabel": "Alter Tarif (bis 01.05.2026)",
+      "total": 0,
+      "mel": 0,
+      "diana": 0
+    },
+    {
+      "month": "2026-02",
+      "waterReading": 125,
+      "powerReading": 19417,
+      "trashCount": 1,
+      "waterUsage": 9,
+      "powerUsage": 1381,
+      "tariffLabel": "Alter Tarif (bis 01.05.2026)",
+      "total": 402.73,
+      "mel": 201.365,
+      "diana": 201.365
+    },
+    {
+      "month": "2026-03",
+      "waterReading": 132,
+      "powerReading": 20340,
+      "trashCount": 1,
+      "waterUsage": 7,
+      "powerUsage": 923,
+      "tariffLabel": "Alter Tarif (bis 01.05.2026)",
+      "total": 288.57000000000005,
+      "mel": 144.28500000000003,
+      "diana": 144.28500000000003
+    },
+    {
+      "month": "2026-04",
+      "waterReading": 138,
+      "powerReading": 21142,
+      "trashCount": 1,
+      "waterUsage": 6,
+      "powerUsage": 802,
+      "tariffLabel": "Alter Tarif (bis 01.05.2026)",
+      "total": 256.33000000000004,
+      "mel": 128.16500000000002,
+      "diana": 128.16500000000002
+    },
+    {
+      "month": "2026-05",
+      "waterReading": 148,
+      "powerReading": 21923,
+      "trashCount": 1,
+      "waterUsage": 10,
+      "powerUsage": 781,
+      "tariffLabel": "Neuer Tarif (ab 02.05.2026)",
+      "total": 315.1793,
+      "mel": 157.58965,
+      "diana": 157.58965
+    },
+    {
+      "month": "2026-06",
+      "waterReading": 154,
+      "powerReading": 456,
+      "trashCount": 1,
+      "waterUsage": 6,
+      "powerUsage": 456,
+      "tariffLabel": "Neuer Tarif (ab 02.05.2026)",
+      "total": 204.8168,
+      "mel": 102.4084,
+      "diana": 102.4084
+    },
+    {
+      "month": "2026-07",
+      "waterReading": 161,
+      "powerReading": 783,
+      "trashCount": 2,
+      "waterUsage": 7,
+      "powerUsage": 327,
+      "tariffLabel": "Neuer Tarif (ab 02.05.2026)",
+      "total": 177.92309999999998,
+      "mel": 88.96154999999999,
+      "diana": 88.96154999999999
+    },
+    {
+      "month": "2026-08",
+      "waterReading": 167,
+      "powerReading": 1090,
+      "trashCount": 1,
+      "waterUsage": 6,
+      "powerUsage": 307,
+      "tariffLabel": "Neuer Tarif (ab 02.05.2026)",
+      "total": 162.3071,
+      "mel": 81.15355,
+      "diana": 81.15355
+    },
+    {
+      "month": "2026-09",
+      "waterReading": 173,
+      "powerReading": 1399,
+      "trashCount": 2,
+      "waterUsage": 6,
+      "powerUsage": 309,
+      "tariffLabel": "Neuer Tarif (ab 02.05.2026)",
+      "total": 168.3777,
+      "variableCosts": 132.07770000000002,
+      "mel": 66.03885000000001,
+      "diana": 66.03885000000001
+    }
+  ],
+  "tariffs": [
+    {
+      "validFrom": "2026-01-01",
+      "stromGrund": 12,
+      "stromTag": 0.23,
+      "stromNacht": 0.23,
+      "wasserGrund": 11.45,
+      "abwasserGrund": 10,
+      "muellGrund": 6.46,
+      "muellAbfuhr": 5.5,
+      "wasserPreis": 1.85,
+      "abwasserPreis": 2.56,
+      "label": "Alter Tarif (bis 01.05.2026)"
+    },
+    {
+      "validFrom": "2026-05-02",
+      "stromGrund": 14.85,
+      "stromTag": 0.2853,
+      "stromNacht": 0.1853,
+      "wasserGrund": 11.45,
+      "abwasserGrund": 10,
+      "muellGrund": 6.46,
+      "muellAbfuhr": 5.5,
+      "wasserPreis": 1.85,
+      "abwasserPreis": 2.56,
+      "label": "Neuer Tarif (ab 02.05.2026)"
+    }
+  ]
+}
