@@ -101,8 +101,6 @@
   <p><strong>Vorjahresvergleich:</strong> <span id="comparePrev">–</span></p>
 </div>
 
-<canvas id="usageChart" height="120"></canvas>
-
 <!-- Buttons -->
 <button onclick="backupData()">Backup erstellen</button>
 <button onclick="exportCSV()">CSV Export</button>
@@ -184,73 +182,31 @@
     return { prevWater, prevPower };
   }
 
-  function renderChart() {
-    const months = loadMonths();
-    const year = document.getElementById('yearFilter').value;
-    const filtered = months.filter(m => year === 'all' || m.month.startsWith(year));
+function render() {
+  const months = loadMonths();
+  const year = document.getElementById('yearFilter').value;
+  const filtered = months.filter(m => year === 'all' || m.month.startsWith(year));
 
-    const labels = filtered.map(m => m.month);
-    const water = filtered.map(m => m.waterUsage);
-    const power = filtered.map(m => m.powerUsage);
-    const trash = filtered.map(m => m.trashCount);
+  const tbody = document.querySelector('#monthsTable tbody');
+  tbody.innerHTML = '';
 
-    // Destroy existing chart if present to avoid duplicates
-    if (window._usageChart) {
-      window._usageChart.destroy();
-      window._usageChart = null;
-    }
+  filtered.forEach((m, idx) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${m.month}</td>
+      <td>${(m.waterUsage || 0).toFixed(2)}</td>
+      <td>${(m.powerUsage || 0).toFixed(0)}</td>
+      <td>${m.trashCount || 0}</td>
+      <td>${m.tariffLabel || ''}</td>
+      <td>${(m.total || 0).toFixed(2)}</td>
+      <td>${(m.mel || 0).toFixed(2)}</td>
+      <td>${(m.diana || 0).toFixed(2)}</td>
+      <td><button onclick="deleteMonth(${idx})">X</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
 
-    window._usageChart = new Chart(document.getElementById('usageChart'), {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [
-          { label: 'Wasser (m³)', data: water, borderColor: 'blue', fill: false },
-          { label: 'Strom (kWh)', data: power, borderColor: 'red', fill: false },
-          { label: 'Müll (Abfuhren)', data: trash, borderColor: 'green', fill: false }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false
-      }
-    });
-  }
-
-  function renderComparison() {
-    const months = loadMonths();
-    const year = document.getElementById('yearFilter').value;
-
-    if (year === 'all') {
-      document.getElementById('comparePrev').textContent = "Bitte Jahr wählen";
-      return;
-    }
-
-    const thisYear = months.filter(m => m.month.startsWith(year));
-    const lastYear = months.filter(m => m.month.startsWith(String(Number(year)-1)));
-
-    const sumThis = thisYear.reduce((a,b)=>a+b.total,0);
-    const sumLast = lastYear.reduce((a,b)=>a+b.total,0);
-
-    if (lastYear.length === 0) {
-      document.getElementById('comparePrev').textContent = "Kein Vorjahr vorhanden";
-      return;
-    }
-
-    const diff = sumThis - sumLast;
-    document.getElementById('comparePrev').textContent =
-      `${diff.toFixed(2)} € Unterschied zu ${Number(year)-1}`;
-  }
-
-  function render() {
-    const months = loadMonths();
-    const year = document.getElementById('yearFilter').value;
-    const filtered = months.filter(m => year === 'all' || m.month.startsWith(year));
-
-    const tbody = document.querySelector('#monthsTable tbody');
-    tbody.innerHTML = '';
-
-    let sumWater=0, sumPower=0, sumTrash=0, sumTotal=0, sumMel=0, sumDiana=0;
 
     filtered.forEach((m, idx) => {
       const tr = document.createElement('tr');
@@ -274,16 +230,6 @@
       sumMel += (m.mel || 0);
       sumDiana += (m.diana || 0);
     });
-
-    document.getElementById('sumWater').textContent = sumWater.toFixed(2);
-    document.getElementById('sumPower').textContent = sumPower.toFixed(0);
-    document.getElementById('sumTrash').textContent = sumTrash.toFixed(0);
-    document.getElementById('sumTotal').textContent = sumTotal.toFixed(2);
-    document.getElementById('sumMel').textContent = sumMel.toFixed(2);
-    document.getElementById('sumDiana').textContent = sumDiana.toFixed(2);
-
-    renderChart();
-    renderComparison();
   }
 
   function deleteMonth(i) {
