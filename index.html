@@ -351,7 +351,7 @@
   // Pull gemeinsames Backup aus GitHub (URL anpassen)
   document.getElementById('pullSharedBackupBtn').addEventListener('click', async ()=>{
     try {
-      const url = 'https://DEINNAME.github.io/REPONAME/tofi-nebenkosten-backup.json'; // anpassen
+      const url = 'https://github.com/schmelztiegel/Nebenkosten_ToFis\tofi-nebenkosten-backup.json';
       const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) throw new Error('Datei nicht gefunden: ' + res.status);
       const data = await res.json();
